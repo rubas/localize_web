@@ -79,6 +79,7 @@ defmodule LocalizeWeb.MixProject do
           Localize.Plug.PutLocale,
           Localize.Plug.PutSession,
           Localize.Plug.AcceptLanguage,
+          Localize.LiveView,
           Localize.AcceptLanguage
         ],
         Routes: [
@@ -118,6 +119,7 @@ defmodule LocalizeWeb.MixProject do
       {:phoenix_html_helpers, "~> 1.0"},
       {:phoenix_live_view, "~> 1.0", optional: true},
       {:jason, "~> 1.0", optional: true},
+      {:lazy_html, ">= 0.1.0", only: :test},
       {:ex_doc, "~> 0.34", only: [:dev, :release], runtime: false},
       {:dialyxir, "~> 1.0", only: :dev, runtime: false}
     ] ++ maybe_json_polyfill()

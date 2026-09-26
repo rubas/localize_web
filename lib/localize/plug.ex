@@ -2,7 +2,7 @@ defmodule Localize.Plug do
   @moduledoc """
   Utility functions for setting the locale from the session for Localize and Gettext.
 
-  The primary use case is in LiveView `on_mount` callbacks where the locale needs to be restored from the session that was set during the initial HTTP request by `Localize.Plug.PutLocale` and `Localize.Plug.PutSession`.
+  The primary use case is in LiveView `on_mount` callbacks where the locale needs to be restored from the session that was set during the initial HTTP request by `Localize.Plug.PutLocale` and `Localize.Plug.PutSession`. `Localize.LiveView` builds on it and also sets the locale of a localized live route.
 
   """
 
@@ -50,6 +50,15 @@ defmodule Localize.Plug do
   def put_locale_from_session(session, options \\ [])
 
   def put_locale_from_session(%{@session_key => locale}, options) do
+    put_locale(locale, options)
+  end
+
+  def put_locale_from_session(_session, _options) do
+    {:error, {Localize.UnknownLocaleError, "No locale was found in the session"}}
+  end
+
+  @doc false
+  def put_locale(locale, options) do
     gettext_backends = normalize_gettext_backends(Keyword.get(options, :gettext, []))
 
     with {:ok, locale} <- Localize.validate_locale(locale) do
@@ -58,10 +67,6 @@ defmodule Localize.Plug do
 
       {:ok, locale}
     end
-  end
-
-  def put_locale_from_session(_session, _options) do
-    {:error, {Localize.UnknownLocaleError, "No locale was found in the session"}}
   end
 
   # A locale that Gettext has no translations for is a configuration

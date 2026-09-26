@@ -339,12 +339,21 @@ defmodule Localize.Routes do
       add_to_route(args, field, :localize_locale, locale)
       |> add_to_route(:private, :original_path, original_path)
       |> add_to_route(:private, :localize_gettext_locale, gettext_locale)
+      |> add_live_metadata(verb, locale)
       |> localise_helper(verb, gettext_locale)
 
     quote location: :keep do
       unquote({verb, meta, [translated_path | args]})
     end
   end
+
+  # A live navigation runs no plug, so a LiveView sees its route only
+  # through `Phoenix.Router.route_info/4`, which returns the route
+  # metadata but not its private data. See `Localize.LiveView`.
+  defp add_live_metadata(args, :live, locale),
+    do: add_to_route(args, :metadata, :localize_locale, locale)
+
+  defp add_live_metadata(args, _verb, _locale), do: args
 
   defp eval_locale({:%{}, _, _} = ast) do
     {locale, []} = Code.eval_quoted(ast)
