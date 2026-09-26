@@ -79,7 +79,6 @@ defmodule LocalizeWeb.MixProject do
           Localize.Plug.PutLocale,
           Localize.Plug.PutSession,
           Localize.Plug.AcceptLanguage,
-          Localize.LiveView,
           Localize.AcceptLanguage
         ],
         Routes: [

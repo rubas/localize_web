@@ -339,21 +339,64 @@ defmodule Localize.Routes do
       add_to_route(args, field, :localize_locale, locale)
       |> add_to_route(:private, :original_path, original_path)
       |> add_to_route(:private, :localize_gettext_locale, gettext_locale)
-      |> add_live_metadata(verb, locale)
       |> localise_helper(verb, gettext_locale)
 
-    quote location: :keep do
-      unquote({verb, meta, [translated_path | args]})
+    route = {verb, meta, [translated_path | args]}
+
+    if verb == :live do
+      live_route(route, locale)
+    else
+      quote location: :keep, do: unquote(route)
     end
   end
 
-  # A live navigation runs no plug, so a LiveView sees its route only
-  # through `Phoenix.Router.route_info/4`, which returns the route
-  # metadata but not its private data. See `Localize.LiveView`.
-  defp add_live_metadata(args, :live, locale),
-    do: add_to_route(args, :metadata, :localize_locale, locale)
+  # A live navigation mounts the next LiveView without an HTTP request:
+  # no plug runs and the root layout stays as it is. So each locale's live
+  # routes go into their own live session. A navigation to another locale
+  # is then a full page load, and the session of the live session gives
+  # `mount/3` the route locale. LiveView reads the live session of a route
+  # from a module attribute that has no public API.
+  defp live_route(route, locale) do
+    quote location: :keep do
+      live_session = Module.get_attribute(__MODULE__, :phoenix_live_session_current)
 
-  defp add_live_metadata(args, _verb, _locale), do: args
+      Module.put_attribute(
+        __MODULE__,
+        :phoenix_live_session_current,
+        Localize.Routes.__live_session__(live_session, unquote(Macro.escape(locale)))
+      )
+
+      unquote(route)
+      Module.put_attribute(__MODULE__, :phoenix_live_session_current, live_session)
+    end
+  end
+
+  @doc false
+  def __live_session__(live_session, locale) do
+    %{name: name, extra: extra} = live_session = live_session || %{name: :default, extra: %{}}
+    session_locale = Localize.LanguageTag.to_string(locale)
+
+    %{
+      live_session
+      | name: {name, locale.cldr_locale_id},
+        extra: Map.put(extra, :session, put_session_locale(extra[:session], session_locale))
+    }
+  end
+
+  defp put_session_locale(nil, locale), do: %{Localize.Plug.PutLocale.session_key() => locale}
+
+  defp put_session_locale(%{} = session, locale),
+    do: Map.put(session, Localize.Plug.PutLocale.session_key(), locale)
+
+  defp put_session_locale({_m, _f, _a} = mfa, locale),
+    do: {__MODULE__, :__session__, [locale, mfa]}
+
+  @doc false
+  def __session__(conn, locale, {module, function, args}) do
+    module
+    |> apply(function, [conn | args])
+    |> Map.put(Localize.Plug.PutLocale.session_key(), locale)
+  end
 
   defp eval_locale({:%{}, _, _} = ast) do
     {locale, []} = Code.eval_quoted(ast)
