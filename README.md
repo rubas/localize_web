@@ -58,12 +58,13 @@ used outside a browser/session pipeline, fetch cookies before `PutLocale`;
 
 ### LiveView Support
 
-Restore the locale in your LiveView `on_mount` callback:
+Add `Localize.LiveView` to the `on_mount` hooks of your live session. It sets the locale of a localized live route, also after a live navigation, and otherwise the locale from the session:
 
 ```elixir
-def on_mount(:default, _params, session, socket) do
-  {:ok, _locale} = Localize.Plug.put_locale_from_session(session, gettext: MyApp.Gettext)
-  {:cont, socket}
+live_session :default, on_mount: [{Localize.LiveView, gettext: MyApp.Gettext}] do
+  localize do
+    live "/dashboard", DashboardLive
+  end
 end
 ```
 
