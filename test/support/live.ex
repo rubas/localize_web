@@ -1,10 +1,18 @@
 defmodule MyAppWeb.LocaleLive do
   use Phoenix.LiveView
 
+  def handle_params(_params, _uri, socket) do
+    {:noreply,
+     assign(socket,
+       locale: Localize.get_locale().cldr_locale_id,
+       gettext: Gettext.get_locale(MyApp.Gettext)
+     )}
+  end
+
   def render(assigns) do
     ~H"""
-    <p id="locale">{Localize.get_locale().cldr_locale_id}</p>
-    <p id="gettext">{Gettext.get_locale(MyApp.Gettext)}</p>
+    <p id="locale">{@locale}</p>
+    <p id="gettext">{@gettext}</p>
     """
   end
 end
@@ -13,6 +21,8 @@ defmodule MyApp.LiveRouter do
   use Phoenix.Router
   use Localize.Routes, gettext: MyApp.Gettext, helpers: false
   import Phoenix.LiveView.Router
+
+  @audio_metadata %{kind: :audio}
 
   pipeline :browser do
     plug(:fetch_session)
@@ -26,6 +36,7 @@ defmodule MyApp.LiveRouter do
     live_session :localized, on_mount: {Localize.LiveView, gettext: MyApp.Gettext} do
       localize [:en, :fr] do
         live("/#{locale}/video", LocaleLive)
+        live("/#{locale}/audio", LocaleLive, metadata: @audio_metadata)
       end
 
       live("/live", LocaleLive)
