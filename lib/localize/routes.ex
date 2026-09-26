@@ -448,8 +448,6 @@ defmodule Localize.Routes do
     {:<<>>, meta, merge_literals(segments)}
   end
 
-  defp merge_literal_segments(other), do: other
-
   defp merge_literals([first, second | rest]) when is_binary(first) and is_binary(second) do
     merge_literals([first <> second | rest])
   end
@@ -458,10 +456,10 @@ defmodule Localize.Routes do
   defp merge_literals([]), do: []
 
   @doc false
-  def translate_path_now(path, locale, gettext_locale, gettext_backend) do
-    Macro.prewalk(path, fn segment ->
-      translate_segment_now(locale, gettext_locale, gettext_backend, segment)
-    end)
+  # Only the literal segments are translated, never code inside `#{...}`.
+  def translate_path_now({:<<>>, meta, segments}, locale, gettext_locale, gettext_backend) do
+    {:<<>>, meta,
+     Enum.map(segments, &translate_segment_now(locale, gettext_locale, gettext_backend, &1))}
   end
 
   defp translate_segment_now(_locale, _gettext_locale, _backend, "" = segment), do: segment

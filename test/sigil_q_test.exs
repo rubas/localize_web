@@ -70,4 +70,9 @@ defmodule SigilQTest do
     assert url(MyApp.Endpoint, ~p[/users/us]) == "http://localhost/users/us"
     assert url(MyApp.Endpoint, MyApp.Router, ~p[/users/us]) == "http://localhost/users/us"
   end
+
+  test "sigil_q does not translate string literals in interpolated code" do
+    Localize.put_locale(:fr)
+    assert ~q"/users/#{String.upcase("users")}" == "/users_fr/USERS"
+  end
 end
